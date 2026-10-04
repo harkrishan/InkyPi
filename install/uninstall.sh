@@ -106,6 +106,7 @@ confirm_uninstall() {
 
 check_permissions
 confirm_uninstall
+bash "$(dirname "$(readlink -f "$0")")/wifi-setup/uninstall-wifi-setup.sh" || exit 1
 stop_service
 disable_service
 remove_files

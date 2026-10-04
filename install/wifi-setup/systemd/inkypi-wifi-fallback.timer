@@ -1,0 +1,10 @@
+[Unit]
+Description=Run InkyPi Wi-Fi fallback check after boot
+
+[Timer]
+OnBootSec=12s
+Unit=inkypi-wifi-fallback.service
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

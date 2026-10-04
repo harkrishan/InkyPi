@@ -89,17 +89,13 @@ resolve_waveshare_type() {
 
 # Parse the arguments, looking for the -W option.
 parse_arguments() {
-    while getopts ":W:" opt; do
-        case $opt in
-            W) resolve_waveshare_type "$OPTARG"
-                echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
-                ;;
-            \?) echo "Invalid option: -$OPTARG." >&2
-                exit 1
-                ;;
-            :) echo "Option -$OPTARG requires an the model type of the Waveshare screen." >&2
-               exit 1
-               ;;
+    WIFI_OPTIONS=()
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -W) [ "$#" -ge 2 ] || { echo "-W requires a model" >&2; exit 1; }
+                resolve_waveshare_type "$2"; shift 2 ;;
+            --fast-boot) WIFI_OPTIONS+=(--fast-boot); shift ;;
+            *) echo "Invalid option: $1" >&2; exit 1 ;;
         esac
     done
 }
@@ -434,5 +430,7 @@ install_app_service
 
 echo "Update JS and CSS files"
 bash $SCRIPT_DIR/update_vendors.sh > /dev/null
+
+bash "$SCRIPT_DIR/wifi-setup/install-wifi-setup.sh" "${WIFI_OPTIONS[@]}" || exit 1
 
 ask_for_reboot

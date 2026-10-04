@@ -110,28 +110,87 @@ def generate_startup_image(dimensions=(800,480)):
     width, height = dimensions
 
     hostname = socket.gethostname()
-    ip = get_ip_address()
+
+    hotspot_active = False
+    try:
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "NAME,DEVICE", "connection", "show", "--active"],
+            text=True,
+            capture_output=True
+        )
+        hotspot_active = any(
+            line.startswith("inkypi-hotspot:wlan0")
+            for line in result.stdout.splitlines()
+        )
+    except Exception:
+        hotspot_active = False
 
     image = Image.new("RGBA", dimensions, bg_color)
     image_draw = ImageDraw.Draw(image)
 
     title_font_size = width * 0.145
-    image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
+    image_draw.text(
+        (width/2, height/2),
+        "inkypi",
+        anchor="mm",
+        fill=text_color,
+        font=get_font("Jost", title_font_size)
+    )
 
-    text = f"To get started, visit http://{hostname}.local"
     text_font_size = width * 0.032
 
-    # Draw the instructions
-    y_text = height * 3 / 4
-    image_draw.text((width/2, y_text), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
+    if hotspot_active:
+        lines = [
+            "Wi-Fi setup mode",
+            "SSID: InkyPi-Setup",
+            "Password: inkypi123",
+            "Open http://192.168.4.1",
+        ]
 
-    # Draw the IP on a line below
-    ip_text = f"or http://{ip}"
-    ip_text_font_size = width * 0.032
-    bbox = image_draw.textbbox((0, 0), text, font=get_font("Jost", text_font_size))
-    text_height = bbox[3] - bbox[1]
-    ip_y = y_text + text_height * 1.35
-    image_draw.text((width/2, ip_y), ip_text, anchor="mm", fill=text_color, font=get_font("Jost", ip_text_font_size))
+        start_y = height * 0.70
+        line_gap = height * 0.075
+
+        for index, line in enumerate(lines):
+            image_draw.text(
+                (width/2, start_y + index * line_gap),
+                line,
+                anchor="mm",
+                fill=text_color,
+                font=get_font("Jost", text_font_size)
+            )
+    else:
+        try:
+            ip = get_ip_address()
+        except Exception:
+            ip = "IP unavailable"
+
+        text = f"To get started, visit http://{hostname}.local"
+        y_text = height * 3 / 4
+
+        image_draw.text(
+            (width/2, y_text),
+            text,
+            anchor="mm",
+            fill=text_color,
+            font=get_font("Jost", text_font_size)
+        )
+
+        ip_text = f"or http://{ip}"
+        bbox = image_draw.textbbox(
+            (0, 0),
+            text,
+            font=get_font("Jost", text_font_size)
+        )
+        text_height = bbox[3] - bbox[1]
+        ip_y = y_text + text_height * 1.35
+
+        image_draw.text(
+            (width/2, ip_y),
+            ip_text,
+            anchor="mm",
+            fill=text_color,
+            font=get_font("Jost", text_font_size)
+        )
 
     return image
 

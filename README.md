@@ -1,4 +1,4 @@
-# InkyPi 
+# InkyPi — Wi-Fi Setup Edition
 
 <img src="./docs/images/inky_clock.jpg" />
 
@@ -27,6 +27,44 @@ And additional plugins coming soon! For documentation on building custom plugins
 
 See [the wiki](https://github.com/fatihak/InkyPi/wiki) for a list of community-maintained third-party plugins.
 
+## What this fork adds
+
+This is [harkrishan's fork](https://github.com/harkrishan/InkyPi) of
+[fatihak/InkyPi](https://github.com/fatihak/InkyPi). It keeps the original display,
+plugins, playlists and installation flow, and adds a way to recover Wi-Fi without
+editing files on the SD card.
+
+When your Pi cannot join a saved Wi-Fi network at boot, it creates its own setup
+network and shows connection instructions on the e-paper screen. Join that
+network from your phone or computer, choose your home Wi-Fi, and enter its
+password. InkyPi then returns to its normal display.
+
+The additions include:
+
+- A Wi-Fi setup page with network scanning, a show/hide password button and saved-network deletion.
+- Setup instructions on the display, with time for slow colour panels to finish refreshing.
+- A handoff back to the normal setup screen or the active playlist after Wi-Fi connects.
+- Installation and update helpers that reuse existing Wi-Fi profiles.
+- Automatic use of your Pi's hostname and installation location; no `pi` username or personal hostname is required.
+- The exported Waveshare `epd7in3f` driver and the working `pi-heif==0.14.0` dependency pin.
+- Optional fast boot, disabled by default.
+
+**Validation status:** 14 automated Wi-Fi tests and syntax checks passed. Fresh
+installation, actual Wi-Fi switching and e-paper behaviour still need testing on
+a Raspberry Pi. The complete upstream test suite has not been run for this change.
+
+## Guide
+
+- [Hardware](#hardware)
+- [Installation](#installation)
+- [Using Wi-Fi setup](#using-wi-fi-setup)
+- [Optional fast boot](#optional-fast-boot)
+- [Update](#update)
+- [Troubleshooting Wi-Fi setup](#troubleshooting-wi-fi-setup)
+- [Uninstall](#uninstall)
+- [Waveshare display support](#waveshare-display-support)
+- [Technical notes and hardware checklist](./docs/wifi-setup.md)
+
 ## Hardware 
 - Raspberry Pi (4 | 3 | Zero 2 W)
     - Recommended to get 40 pin Pre Soldered Header
@@ -46,73 +84,226 @@ See [the wiki](https://github.com/fatihak/InkyPi/wiki) for a list of community-m
 - Picture Frame or 3D Stand
     - See [community.md](./docs/community.md) for 3D models, custom builds, and other submissions from the community
 
-**Disclosure:** The links above are affiliate links. I may earn a commission from qualifying purchases made through them, at no extra cost to you, which helps maintain and develop this project.
+**Upstream disclosure:** The hardware links above are retained from the original project and include affiliate links supporting its maintainer.
 
 ## Installation
-To install InkyPi, follow these steps:
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/fatihak/InkyPi.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd InkyPi
-    ```
-3. Run the installation script with sudo:
-    ```bash
-    sudo bash install/install.sh [-W <waveshare device model>]
-    ``` 
-     Option: 
-    
-    * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
+### Before you start
 
-    e.g. for Inky displays use:
-    ```bash
-    sudo bash install/install.sh
-    ```
+Use a Raspberry Pi with a supported display and Raspberry Pi OS Bookworm or
+later. The Wi-Fi helper expects NetworkManager to manage the built-in wireless
+interface named `wlan0`. Set your Wi-Fi country in Raspberry Pi OS and give the Pi
+internet access for downloading installation dependencies. The fallback portal
+becomes available after installation; it cannot replace that initial connection.
 
-    and for [Waveshare displays](#waveshare-display-support) use:
-    ```bash
-    sudo bash install/install.sh -W epd7in3f
-    ```
+A fresh SD card is recommended. If you are changing an existing installation,
+back up its configuration first and use the update instructions below where
+appropriate. Keep the checkout in a permanent location: InkyPi runs its source
+files from that directory through an installation link.
 
-    Some models are not published in the [common driver directory](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) and only ship under `E-paper_Separate_Program`. For those, pass the path to the driver within the [waveshareteam/e-Paper](https://github.com/waveshareteam/e-Paper) repository instead of the bare model name:
-    ```bash
-    sudo bash install/install.sh -W E-paper_Separate_Program/3.6inch_e-Paper_E/RaspberryPi_JetsonNano/python/lib/waveshare_epd/epd3in6e.py
-    ```
+### 1. Download this fork
 
+```bash
+git clone --branch main https://github.com/harkrishan/InkyPi.git
+cd InkyPi
+```
 
-After the installation is complete, the script will prompt you to reboot your Raspberry Pi. Once rebooted, the display will update to show the InkyPi splash screen.
+Use this fork's URL to get the Wi-Fi additions. The upstream repository's
+installation guide remains useful for preparing Raspberry Pi OS, but its clone
+command downloads the original project.
 
-Note: 
-- The installation script requires sudo privileges to install and run the service. We recommend starting with a fresh installation of Raspberry Pi OS to avoid potential conflicts with existing software or configurations.
-- The installation process will automatically enable the required SPI and I2C interfaces on your Raspberry Pi.
+### 2. Install for your display
 
-For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also checkout [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
+For a **Pimoroni Inky** display:
+
+```bash
+sudo bash install/install.sh
+```
+
+For the **Waveshare model `epd7in3f`**:
+
+```bash
+sudo bash install/install.sh -W epd7in3f
+```
+
+For another Waveshare display, replace `epd7in3f` with its matching driver name.
+The original `-W` interface is preserved. Models that only appear in Waveshare's
+separate-program folders can still use the full repository-relative driver path:
+
+```bash
+sudo bash install/install.sh -W E-paper_Separate_Program/3.6inch_e-Paper_E/RaspberryPi_JetsonNano/python/lib/waveshare_epd/epd3in6e.py
+```
+
+The installer enables the required SPI and I2C interfaces, installs the original
+InkyPi dependencies and service, and adds the Wi-Fi setup scripts and services.
+It uses the existing installation layout rather than assuming a home directory
+such as `/home/pi`. Both dependency files pin `pi-heif` to `0.14.0`, the version
+that worked on the exported Bookworm/ARM setup; other OS/Python combinations still
+need validation.
+
+### 3. Reboot and open InkyPi
+
+Accept the installer's reboot prompt, or reboot later with:
+
+```bash
+sudo reboot
+```
+
+If saved Wi-Fi connects, access InkyPi using your Pi's hostname followed by
+`.local`, or its local IP address. For example, a Pi named `livingroom` can be
+opened at `http://livingroom.local`. The hostname is read from your device.
+If saved Wi-Fi does not connect, follow the setup instructions below.
+
+For SD-card preparation and the original hardware instructions, see
+[installation.md](./docs/installation.md).
+
+## Using Wi-Fi setup
+
+### Connect the Pi to Wi-Fi
+
+1. Boot the Pi and allow time for Wi-Fi detection and the e-paper refresh.
+2. If no saved Wi-Fi connects, the screen shows **Wi-Fi setup mode**.
+3. On your phone or computer, join the network below. Your device may warn that
+   it has no internet connection; stay connected while configuring the Pi.
+4. Open the setup address manually in a browser.
+5. Select your home Wi-Fi, enter its password and choose **Connect**.
+
+| Setting | Default value |
+| --- | --- |
+| Setup network | `InkyPi-Setup` |
+| Setup password | `inkypi123` |
+| Setup page | `http://192.168.4.1` |
+
+The setup page offers a password visibility button and a list of saved Wi-Fi
+profiles with delete controls. Deleting a saved profile removes its saved
+credentials. The setup hotspot itself cannot be deleted through the page.
+
+### What happens after connecting?
+
+The Pi switches from its setup hotspot to your Wi-Fi, closes the setup page's
+service and resumes InkyPi. With an active playlist and previous-plugin metadata,
+it requests that previous plugin immediately; otherwise the ordinary refresh
+schedule applies. With no active playlist, it shows the normal InkyPi setup screen.
+
+Your browser may disconnect before it receives the success page because the Pi
+uses the same radio for its hotspot and your Wi-Fi. Join your home network again
+and open InkyPi using its hostname or IP address. If the password was wrong or the
+connection failed, the setup hotspot is restored: reconnect to it and try again.
+
+### Behaviour to know
+
+- The recovery check runs **once per boot**, after allowing saved networks time
+  to connect. It does not continuously monitor the internet.
+- A Wi-Fi connection without internet access still counts as connected.
+- The page does not automatically redirect your browser; open `http://192.168.4.1` yourself.
+- InkyPi finishes drawing the setup screen before the setup page takes over
+  port 80. A slow colour panel can take more than a minute. If drawing has not
+  completed after 180 seconds, the helper reports a failure and leaves InkyPi
+  running instead of interrupting the refresh.
+- The portal normally runs only in setup mode. The active-network deletion helper
+  also waits for the setup image before handing over to the portal.
+- The setup password is a public default. Anyone who joins that hotspot can
+  manage its Wi-Fi settings. Keep the portal local and do not forward it through
+  your router.
+
+## Optional fast boot
+
+For a dedicated display that does not need Bluetooth or a modem, add `--fast-boot`
+to installation:
+
+```bash
+sudo bash install/install.sh -W epd7in3f --fast-boot
+```
+
+To apply it to an already installed device:
+
+```bash
+sudo bash install/wifi-setup/install-wifi-setup.sh --update --fast-boot
+```
+
+This disables enabled NetworkManager-wait-online, ModemManager, bluetooth and
+hciuart services for future boots. It does not stop them during installation.
+Bluetooth or modem features may be unavailable after reboot. Their original
+enabled states are recorded once, and removing the Wi-Fi layer restores those
+states. No such service changes are made without `--fast-boot`.
 
 ## Update
-To update your InkyPi with the latest code changes, follow these steps:
-1. Navigate to the project directory:
-    ```bash
-    cd InkyPi
-    ```
-2. Fetch the latest changes from the repository:
-    ```bash
-    git pull
-    ```
-3. Run the update script with sudo:
-    ```bash
-    sudo bash install/update.sh
-    ```
-This process ensures that any new updates, including code changes and additional dependencies, are properly applied without requiring a full reinstallation.
+
+Run these commands from your existing checkout of **this fork**. Back up the
+configuration first; the example creates a dated copy alongside it:
+
+```bash
+cd InkyPi
+cp -a src/config "config-backup-$(date +%Y%m%d-%H%M%S)"
+git switch main
+git pull --ff-only origin main
+sudo bash install/update.sh
+```
+
+If Git reports local changes or a conflict, keep those changes and resolve the
+message before continuing. Do not use a hard reset to bypass it. An installation
+cloned from the original upstream repository must be deliberately migrated to
+this fork; pulling upstream alone will not add or maintain these customizations.
+
+The updater reinstalls the Wi-Fi scripts and services, reuses the hotspot profile
+and preserves its existing password and saved client networks. It does not replace
+your application configuration. If the setup portal is active, it restarts that
+portal without starting InkyPi over it. Reboot when the Wi-Fi layer is first added
+through an update so its boot timer can run.
+
+Users already on `feature/wifi-fallback-installer` can use the same commands to
+switch to `main` after the merge. Use the updater for routine updates instead of
+re-running the full installer.
+
+## Troubleshooting Wi-Fi setup
+
+| What you see | What to try |
+| --- | --- |
+| The setup network has no internet | Expected during setup. Stay connected and open `http://192.168.4.1`. |
+| The browser disconnects after pressing Connect | Join your home Wi-Fi and check InkyPi. If the setup hotspot reappears, reconnect and retry. |
+| The hotspot appears but the page is not ready | Allow the display refresh to finish. If it remains unavailable, inspect the logs below. |
+| No hotspot appears | Confirm NetworkManager manages `wlan0`, the Wi-Fi country is set, and the device has rebooted since installation. A connected saved network prevents fallback. |
+| The hostname address does not work | Use the Pi's IP address from your router or the normal setup screen. |
+| Wi-Fi drops long after boot | The check is not continuous. Reboot, or trigger the recovery check below from a terminal you can still access. |
+
+Request another recovery check:
+
+```bash
+sudo systemctl start inkypi-wifi-fallback.service
+```
+
+Read the relevant service logs:
+
+```bash
+journalctl -u inkypi -u inkypi-wifi-fallback -u inkypi-wifi-setup --no-pager -n 100
+```
+
+The recovery check will leave a connected saved Wi-Fi network alone; it is not a
+command to force setup mode while that connection is working. For general display
+or installation issues, see the [troubleshooting guide](./docs/troubleshooting.md).
+The [Wi-Fi technical guide](./docs/wifi-setup.md) includes service details,
+automated test commands and a hardware validation checklist.
 
 ## Uninstall
-To install InkyPi, simply run the following command:
+
+To remove **only the Wi-Fi additions**, keeping InkyPi and saved client networks:
+
+```bash
+sudo bash install/wifi-setup/uninstall-wifi-setup.sh
+sudo systemctl start inkypi.service
+```
+
+This removes the setup hotspot and its services, and restores recorded fast-boot
+service states. Reboot to let restored services start normally.
+
+To remove **InkyPi and the Wi-Fi additions**:
 
 ```bash
 sudo bash install/uninstall.sh
 ```
+
+The full uninstaller asks for confirmation and retains the original behaviour of
+removing application configuration. Back up anything you want to keep first.
 
 ## Roadmap
 The InkyPi project is constantly evolving, with many exciting features and improvements planned for the future.
@@ -128,7 +319,7 @@ Check out the public [trello board](https://trello.com/b/SWJYWqe4/inkypi) to exp
 
 Waveshare offers a range of e-Paper displays, similar to the Inky screens from Pimoroni, but with slightly different requirements. While Inky displays auto-configure via the inky Python library, Waveshare displays require model-specific drivers from their [Python EPD library](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
 
-This project has been tested with several Waveshare models. **Displays based on the IT8951 controller are not supported**, and **screens smaller than 4 inches are not recommended** due to limited resolution.
+The upstream project reports testing with several Waveshare models. This fork's new Wi-Fi flow still needs hardware validation for each display used. **Displays based on the IT8951 controller are not supported**, and **screens smaller than 4 inches are not recommended** due to limited resolution.
 
 If your display model has a corresponding driver in the link above, it’s likely to be compatible. When running the installation script, use the -W option to specify your display model (without the .py extension). The script will automatically fetch and install the correct driver.
 
@@ -140,7 +331,7 @@ This project includes fonts and icons with separate licensing and attribution re
 
 ## Issues
 
-Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on the [GitHub Issues](https://github.com/fatihak/InkyPi/issues) page.
+Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, report fork-specific Wi-Fi or installer problems on [this fork's issues page](https://github.com/harkrishan/InkyPi/issues). For the original project, see [upstream issues](https://github.com/fatihak/InkyPi/issues).
 
 If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details..
 
