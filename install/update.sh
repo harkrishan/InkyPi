@@ -53,7 +53,9 @@ update_app_service() {
     cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
     echo "Restarting $APPNAME service."
     sudo systemctl daemon-reload
-    sudo systemctl restart $SERVICE_FILE
+    if ! systemctl is-active --quiet inkypi-wifi-setup.service; then
+      sudo systemctl restart $SERVICE_FILE
+    fi
   else
     echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
     exit 1
@@ -124,6 +126,7 @@ sudo chmod +x $BINPATH/$APPNAME
 echo "Update JS and CSS files"
 bash $SCRIPT_DIR/update_vendors.sh > /dev/null
 
+bash "$SCRIPT_DIR/wifi-setup/install-wifi-setup.sh" --update || exit 1
 update_app_service
 update_cli
 

@@ -1,0 +1,15 @@
+[Unit]
+Description=InkyPi Wi-Fi Setup Portal
+After=NetworkManager.service
+Wants=NetworkManager.service
+Conflicts=inkypi.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/systemctl stop inkypi.service
+ExecStart=/usr/local/sbin/inkypi-wifi-setup.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,10 @@
+## Enhanced Wi-Fi setup in this fork
+
+This fork adds the exported Wi-Fi recovery portal, saved-network management and
+hotspot instructions on the display while preserving the upstream installer.
+See [Wi-Fi setup and validation](docs/wifi-setup.md) for installation, updates,
+optional fast boot, recovery and the hardware test checklist.
+
 # InkyPi 
 
 <img src="./docs/images/inky_clock.jpg" />
