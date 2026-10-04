@@ -13,7 +13,7 @@ Use Raspberry Pi OS Bookworm or later with NetworkManager managing `wlan0`.
 Configure the Wi-Fi country in Raspberry Pi OS first. Run from any user's checkout:
 
 ```sh
-git clone --branch feature/wifi-fallback-installer https://github.com/harkrishan/InkyPi.git
+git clone --branch main https://github.com/harkrishan/InkyPi.git
 cd InkyPi
 sudo bash install/install.sh -W epd7in3f
 ```
@@ -74,7 +74,7 @@ so ordinary saved-network deletion is the usual path through its UI.
 
 ## Update and uninstall
 
-Back up `src/config` before updating. Stay on this fork's branch:
+Back up `src/config` before updating. Use this fork's `main` branch:
 
 ```sh
 git pull --ff-only
@@ -124,7 +124,7 @@ bash -n install/uninstall.sh
 for script in install/wifi-setup/*.sh; do bash -n "$script"; done
 ```
 
-Before merging, test on a spare SD card and actual display:
+Hardware validation remains outstanding. Test on a spare SD card and actual display:
 
 1. Fresh install with `-W epd7in3f`, a different username/hostname and checkout path.
 2. Boot with saved Wi-Fi; verify normal display with and without active playlist.
