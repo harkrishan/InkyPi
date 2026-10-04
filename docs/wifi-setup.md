@@ -124,7 +124,7 @@ bash -n install/uninstall.sh
 for script in install/wifi-setup/*.sh; do bash -n "$script"; done
 ```
 
-Hardware validation remains outstanding. Test on a spare SD card and actual display:
+For device-specific checks, use a spare SD card and the actual display:
 
 1. Fresh install with `-W epd7in3f`, a different username/hostname and checkout path.
 2. Boot with saved Wi-Fi; verify normal display with and without active playlist.
